@@ -1,43 +1,41 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
+	"os"
+	"strconv"
 	"strings"
+
+	"github.com/go-sql-driver/mysql"
 )
 
 // Comments data structure.
 
-type comment struct {
-	ID     string `json: "id"`
-	Title  string `json: "title"`
-	Text   string `json: "text"`
-	Author string `json: "author"`
-	Date   string `json: "date"`
-	Anime  string `json: "anime"`
+type Comment struct {
+	ID     int64
+	Title  string
+	Text   string
+	Author string
+	Date   string
+	Anime  string
 }
 
 // Json file that will be send
 
 type JsonResponseComments struct {
 	Type    string    `json:"type"`
-	Data    []comment `json:"data"`
+	Data    []Comment `json:"data"`
 	Message string    `json:"message"`
-}
-
-type JsonResponseComment struct {
-	Type    string  `json:"type"`
-	Data    comment `json:"data"`
-	Message string  `json:"message"`
 }
 
 // Main function
 
 func main() {
-	// Defining directory for the router to get the templates
-	// router.LoadHTMLGlob("templates/*")
-
+	// Endpoint definitions
 	// Associate the endpoint "/comments" with the getComments function.
 	http.HandleFunc("/comments", getComments)
 
@@ -60,42 +58,84 @@ func main() {
 
 // Seeding comments data
 
-var comments = []comment{
-	{ID: "1", Title: "Testing Forum", Text: "Testing text", Author: "Daniel", Date: "28/11/2022", Anime: "Darling"},
-	{ID: "2", Title: "Testing Forum 2", Text: "Testing text", Author: "Daniel", Date: "28/11/2022", Anime: "Fullmetal"},
-	{ID: "3", Title: "Testing Forum 3", Text: "Testing text", Author: "Daniel", Date: "28/11/2022", Anime: "Naruto"},
+var comments = []Comment{
+	{ID: 1, Title: "Testing Forum", Text: "Testing text", Author: "Daniel", Date: "28/11/2022", Anime: "Darling"},
+	{ID: 2, Title: "Testing Forum 2", Text: "Testing text", Author: "Daniel", Date: "28/11/2022", Anime: "Fullmetal"},
+	{ID: 3, Title: "Testing Forum 3", Text: "Testing text", Author: "Daniel", Date: "28/11/2022", Anime: "Naruto"},
 }
 
 // API definition
 
 // Retrieve all the comments
 func getComments(w http.ResponseWriter, r *http.Request) {
-	var response = JsonResponseComments{Type: "success", Data: comments}
+	var comments = Comment{}
+	var comments_slice = []Comment{}
+
+	db := dbConn()
+	row, _ := db.Query("SELECT * FROM comments")
+
+	for row.Next() {
+		var title, text, date, author, anime string
+		var id int64
+
+		if err := row.Scan(&id, &title, &text, &author, &date, &anime); err != nil {
+			panic(err.Error())
+		}
+
+		comments.ID = id
+		comments.Title = title
+		comments.Text = text
+		comments.Author = author
+		comments.Date = date
+		comments.Anime = anime
+
+		comments_slice = append(comments_slice, comments)
+	}
+
+	var response = JsonResponseComments{Type: "success", Data: comments_slice}
 	json.NewEncoder(w).Encode(response)
+
+	defer db.Close()
 }
 
 // Retrieve single comment by ID
 func getCommentByID(w http.ResponseWriter, r *http.Request) {
-	// Get the ID passed as a param in the url parsing the URL
-	id := strings.TrimPrefix(r.URL.Path, "/comment/")
+	var comments = Comment{}
+	var comments_slice = []Comment{}
+	var title, text, date, author, anime string
+	var row_id int64
 
-	// Loop the struct looking for the ID passed
-	for _, comment := range comments {
-		if comment.ID == id {
-			var response = JsonResponseComment{Type: "success", Data: comment}
-			json.NewEncoder(w).Encode(response)
-			return
+	// Get the ID passed as a param in the url parsing the URL
+	id, _ := strconv.ParseInt(strings.TrimPrefix(r.URL.Path, "/comment/"), 10, 64)
+
+	db := dbConn()
+	row := db.QueryRow("SELECT * FROM album WHERE id = ?", id)
+	if err := row.Scan(&id, &title, &text, &author, &date, &anime); err != nil {
+		if err == sql.ErrNoRows {
+			panic(err.Error())
 		}
+		panic(err.Error())
 	}
 
-	// Will send NotFound status if the loop don't find the ID
-	var response = JsonResponseComments{Type: "not found", Data: comments}
+	comments.ID = row_id
+	comments.Title = title
+	comments.Text = text
+	comments.Author = author
+	comments.Date = date
+	comments.Anime = anime
+
+	comments_slice = append(comments_slice, comments)
+
+	var response = JsonResponseComments{Type: "success", Data: comments_slice}
 	json.NewEncoder(w).Encode(response)
+
+	defer db.Close()
+
 }
 
 // Post new comment
 func postComment(w http.ResponseWriter, r *http.Request) {
-	var newComment comment
+	var newComment Comment
 	decoder := json.NewDecoder(r.Body).Decode(&newComment)
 	// Using the BindJSON function to the newComment, which is a struct, we can attach the data from the Json to the struct data.
 	if err := decoder; err != nil {
@@ -114,30 +154,30 @@ func postComment(w http.ResponseWriter, r *http.Request) {
 func deleteComment(w http.ResponseWriter, r *http.Request) {
 	id := strings.TrimPrefix(r.URL.Path, "/comment/delete/")
 
-	for index, comment := range comments {
-		if comment.ID == id {
-			comments = removeElement(comments, index)
-			var response = JsonResponseComments{Type: "success", Data: comments}
-			json.NewEncoder(w).Encode(response)
-			return
-		}
+	db := dbConn()
+	delForm, err := db.Prepare("DELETE FROM comments WHERE id=?")
+	if err != nil {
+		panic(err.Error())
 	}
+	delForm.Exec(id)
 
-	var response = JsonResponseComments{Type: "not found", Data: comments}
+	var response = JsonResponseComments{Type: "success", Data: []Comment{}}
 	json.NewEncoder(w).Encode(response)
+
+	defer db.Close()
 }
 
 // Update comment
 func updateComment(w http.ResponseWriter, r *http.Request) {
 	id := strings.TrimPrefix(r.URL.Path, "/comment/update/")
-	var newComment comment
+	var newComment Comment
 
 	decoder := json.NewDecoder(r.Body).Decode(&newComment)
 	if err := decoder; err != nil {
 		return
 	}
 
-	commentFound, index := loopStruct(id)
+	commentFound, index := loopStructUpdate(id)
 	if commentFound {
 		if newComment.Title != "" {
 			comments[index].Title = newComment.Title
@@ -156,16 +196,35 @@ func updateComment(w http.ResponseWriter, r *http.Request) {
 }
 
 // Utility functions
-func removeElement(slice []comment, index int) []comment {
+func removeElement(slice []Comment, index int) []Comment {
 	return append(slice[:index], slice[index+1:]...)
 }
 
-func loopStruct(id string) (bool, int) {
+func loopStructUpdate(id string) (bool, int) {
 	for index, comment := range comments {
-		if comment.ID == id {
+		if strconv.FormatInt(comment.ID, 10) == id {
 			return true, index
 		}
 	}
 
 	return false, 0
+}
+
+func dbConn() (db *sql.DB) {
+	cfg := mysql.Config{
+		User:                 "root",
+		Passwd:               os.Getenv("DBPASS"),
+		Net:                  "tcp",
+		Addr:                 "127.0.0.1:3306",
+		DBName:               "comments",
+		AllowNativePasswords: true,
+	}
+
+	// Get a database handle.
+	db, err := sql.Open("mysql", cfg.FormatDSN())
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return
 }
