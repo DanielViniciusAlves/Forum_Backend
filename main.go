@@ -110,33 +110,37 @@ func updateComment(c *gin.Context) {
 	id := c.Param("id")
 	var newComment comment
 
-	// fmt.Print("Test")
 	if err := c.BindJSON(&newComment); err != nil {
 		return
-	} else if newComment.Title != "" || newComment.Text != "" {
-		for index, comment := range comments {
-			if comment.ID == id {
-				if newComment.Title != "" {
-					comments[index].Title = newComment.Title
-				}
-				if newComment.Text != "" {
-					comments[index].Text = newComment.Text
-				}
-				c.IndentedJSON(http.StatusOK, comments[index])
-				return
-			}
-		}
-	} else {
-		c.IndentedJSON(http.StatusNotFound, newComment)
 	}
 
-}
+	commentFound, index := loopStruct(id)
+	if commentFound {
+		if newComment.Title != "" {
+			comments[index].Title = newComment.Title
+		}
+		if newComment.Text != "" {
+			comments[index].Text = newComment.Text
+		}
 
-// func updateCommentText(c *gin.Context){
-// 	id :=
-// }
+		c.IndentedJSON(http.StatusOK, comments)
+		return
+	}
+
+	c.IndentedJSON(http.StatusNotFound, newComment)
+}
 
 // Utility functions
 func removeElement(slice []comment, index int) []comment {
 	return append(slice[:index], slice[index+1:]...)
+}
+
+func loopStruct(id string) (bool, int) {
+	for index, comment := range comments {
+		if comment.ID == id {
+			return true, index
+		}
+	}
+
+	return false, 0
 }
