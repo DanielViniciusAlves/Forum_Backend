@@ -131,7 +131,7 @@ func deleteComment(w http.ResponseWriter, r *http.Request) {
 func updateComment(w http.ResponseWriter, r *http.Request) {
 	id := strings.TrimPrefix(r.URL.Path, "/comment/update/")
 	var newComment comment
-	fmt.Printf("%s", id)
+
 	decoder := json.NewDecoder(r.Body).Decode(&newComment)
 	if err := decoder; err != nil {
 		return
