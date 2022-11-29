@@ -1,9 +1,10 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
 	"net/http"
-
-	"github.com/gin-gonic/gin"
+	"strings"
 )
 
 // Comments data structure.
@@ -17,29 +18,44 @@ type comment struct {
 	Anime  string `json: "anime"`
 }
 
+// Json file that will be send
+
+type JsonResponseComments struct {
+	Type    string    `json:"type"`
+	Data    []comment `json:"data"`
+	Message string    `json:"message"`
+}
+
+type JsonResponseComment struct {
+	Type    string  `json:"type"`
+	Data    comment `json:"data"`
+	Message string  `json:"message"`
+}
+
 // Main function
 
 func main() {
-	// Initialize the gin router
-	router := gin.Default()
+	// Defining directory for the router to get the templates
+	// router.LoadHTMLGlob("templates/*")
 
 	// Associate the endpoint "/comments" with the getComments function.
-	router.GET("/comments", getComments)
+	http.HandleFunc("/comments", getComments)
 
 	// Associate the endpoint "/comments" with the getCommentByID function.
-	router.GET("/comments/:id", getCommentByID)
+	http.HandleFunc("/comment/", getCommentByID)
 
 	// Associate the endpoint "/comments" with the postComment function.
-	router.POST("/comments", postComment)
+	http.HandleFunc("/new_comment", postComment)
 
 	// Associate the endpoint "/comments" with the deleteComment function.
-	router.DELETE("/comments/delete/:id", deleteComment)
+	http.HandleFunc("/comment/delete/", deleteComment)
 
 	// Associate the endpoint "/comments" with the deleteComment function.
-	router.PUT("/comments/update/:id", updateComment)
+	http.HandleFunc("/comment/update/", updateComment)
 
 	// Start the associate the router whit one http server
-	router.Run("localhost:8080")
+	fmt.Println("Server at 8080")
+	http.ListenAndServe(":8080", nil)
 }
 
 // Seeding comments data
@@ -53,33 +69,36 @@ var comments = []comment{
 // API definition
 
 // Retrieve all the comments
-func getComments(c *gin.Context) {
-	c.IndentedJSON(http.StatusOK, comments)
+func getComments(w http.ResponseWriter, r *http.Request) {
+	var response = JsonResponseComments{Type: "success", Data: comments}
+	json.NewEncoder(w).Encode(response)
 }
 
 // Retrieve single comment by ID
-func getCommentByID(c *gin.Context) {
-	// Get the ID passed as a param in the url
-	id := c.Param("id")
+func getCommentByID(w http.ResponseWriter, r *http.Request) {
+	// Get the ID passed as a param in the url parsing the URL
+	id := strings.TrimPrefix(r.URL.Path, "/comment/")
 
 	// Loop the struct looking for the ID passed
 	for _, comment := range comments {
 		if comment.ID == id {
-			c.IndentedJSON(http.StatusOK, comment)
+			var response = JsonResponseComment{Type: "success", Data: comment}
+			json.NewEncoder(w).Encode(response)
 			return
 		}
 	}
 
 	// Will send NotFound status if the loop don't find the ID
-	c.IndentedJSON(http.StatusNotFound, gin.H{"message": "comment not found"})
+	var response = JsonResponseComments{Type: "not found", Data: comments}
+	json.NewEncoder(w).Encode(response)
 }
 
 // Post new comment
-func postComment(c *gin.Context) {
+func postComment(w http.ResponseWriter, r *http.Request) {
 	var newComment comment
-
+	decoder := json.NewDecoder(r.Body).Decode(&newComment)
 	// Using the BindJSON function to the newComment, which is a struct, we can attach the data from the Json to the struct data.
-	if err := c.BindJSON(&newComment); err != nil {
+	if err := decoder; err != nil {
 		return
 	}
 
@@ -87,30 +106,34 @@ func postComment(c *gin.Context) {
 	comments = append(comments, newComment)
 
 	// Send back a status "created" with the newComment json file
-	c.IndentedJSON(http.StatusCreated, newComment)
+	var response = JsonResponseComments{Type: "success", Data: comments}
+	json.NewEncoder(w).Encode(response)
 }
 
 // Delete comment
-func deleteComment(c *gin.Context) {
-	id := c.Param("id")
+func deleteComment(w http.ResponseWriter, r *http.Request) {
+	id := strings.TrimPrefix(r.URL.Path, "/comment/delete/")
 
 	for index, comment := range comments {
 		if comment.ID == id {
 			comments = removeElement(comments, index)
-			c.IndentedJSON(http.StatusOK, comments)
+			var response = JsonResponseComments{Type: "success", Data: comments}
+			json.NewEncoder(w).Encode(response)
 			return
 		}
 	}
 
-	c.IndentedJSON(http.StatusNotFound, gin.H{"message": "Comment could not be found."})
+	var response = JsonResponseComments{Type: "not found", Data: comments}
+	json.NewEncoder(w).Encode(response)
 }
 
 // Update comment
-func updateComment(c *gin.Context) {
-	id := c.Param("id")
+func updateComment(w http.ResponseWriter, r *http.Request) {
+	id := strings.TrimPrefix(r.URL.Path, "/comment/update/")
 	var newComment comment
-
-	if err := c.BindJSON(&newComment); err != nil {
+	fmt.Printf("%s", id)
+	decoder := json.NewDecoder(r.Body).Decode(&newComment)
+	if err := decoder; err != nil {
 		return
 	}
 
@@ -123,11 +146,13 @@ func updateComment(c *gin.Context) {
 			comments[index].Text = newComment.Text
 		}
 
-		c.IndentedJSON(http.StatusOK, comments)
+		var response = JsonResponseComments{Type: "success", Data: comments}
+		json.NewEncoder(w).Encode(response)
 		return
 	}
 
-	c.IndentedJSON(http.StatusNotFound, newComment)
+	var response = JsonResponseComments{Type: "not found", Data: comments}
+	json.NewEncoder(w).Encode(response)
 }
 
 // Utility functions
