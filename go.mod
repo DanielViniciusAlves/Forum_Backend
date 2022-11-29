@@ -2,7 +2,10 @@ module go_anime/main
 
 go 1.18
 
-require github.com/gin-gonic/gin v1.8.1
+require (
+	github.com/gin-gonic/gin v1.8.1
+	github.com/go-sql-driver/mysql v1.6.0
+)
 
 require (
 	github.com/gin-contrib/sse v0.1.0 // indirect
