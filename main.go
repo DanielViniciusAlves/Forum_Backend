@@ -176,9 +176,6 @@ func updateComment(w http.ResponseWriter, r *http.Request) {
 }
 
 // Utility functions
-func removeElement(slice []Comment, index int) []Comment {
-	return append(slice[:index], slice[index+1:]...)
-}
 
 func dbConn() (db *sql.DB) {
 	cfg := mysql.Config{
