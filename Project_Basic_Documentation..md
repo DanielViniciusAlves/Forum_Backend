@@ -22,3 +22,7 @@ The endpoint will be:
     Delete -> Will delete a specific comment.
 
 ```
+
+# Defining Project Architecture
+
+Because this is a basic project we will use a flat structure to organize out project. With a main file, migrations and models for start. As the project evolves the idea is to add more files and when the structure becomes to much messy we can evolve for a more sophisticate architecture.
