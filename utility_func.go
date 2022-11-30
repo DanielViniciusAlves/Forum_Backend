@@ -21,6 +21,7 @@ func dbConn() (db *sql.DB) {
 	// Get a database handle.
 	db, err := sql.Open("mysql", cfg.FormatDSN())
 	if err != nil {
+		println("Error while starting a connection with the database.")
 		log.Fatal(err)
 	}
 
