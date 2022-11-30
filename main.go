@@ -16,7 +16,6 @@ import (
 // Comments data structure.
 
 type Comment struct {
-	ID     int64
 	Title  string
 	Text   string
 	Author string
@@ -56,14 +55,6 @@ func main() {
 	http.ListenAndServe(":8080", nil)
 }
 
-// Seeding comments data
-
-var comments = []Comment{
-	{ID: 1, Title: "Testing Forum", Text: "Testing text", Author: "Daniel", Date: "28/11/2022", Anime: "Darling"},
-	{ID: 2, Title: "Testing Forum 2", Text: "Testing text", Author: "Daniel", Date: "28/11/2022", Anime: "Fullmetal"},
-	{ID: 3, Title: "Testing Forum 3", Text: "Testing text", Author: "Daniel", Date: "28/11/2022", Anime: "Naruto"},
-}
-
 // API definition
 
 // Retrieve all the comments
@@ -82,7 +73,6 @@ func getComments(w http.ResponseWriter, r *http.Request) {
 			panic(err.Error())
 		}
 
-		comments.ID = id
 		comments.Title = title
 		comments.Text = text
 		comments.Author = author
@@ -109,15 +99,14 @@ func getCommentByID(w http.ResponseWriter, r *http.Request) {
 	id, _ := strconv.ParseInt(strings.TrimPrefix(r.URL.Path, "/comment/"), 10, 64)
 
 	db := dbConn()
-	row := db.QueryRow("SELECT * FROM album WHERE id = ?", id)
-	if err := row.Scan(&id, &title, &text, &author, &date, &anime); err != nil {
+	row := db.QueryRow("SELECT * FROM comments WHERE id = ?", id)
+	if err := row.Scan(&row_id, &title, &text, &author, &date, &anime); err != nil {
 		if err == sql.ErrNoRows {
 			panic(err.Error())
 		}
 		panic(err.Error())
 	}
 
-	comments.ID = row_id
 	comments.Title = title
 	comments.Text = text
 	comments.Author = author
@@ -136,18 +125,25 @@ func getCommentByID(w http.ResponseWriter, r *http.Request) {
 // Post new comment
 func postComment(w http.ResponseWriter, r *http.Request) {
 	var newComment Comment
+
+	db := dbConn()
 	decoder := json.NewDecoder(r.Body).Decode(&newComment)
-	// Using the BindJSON function to the newComment, which is a struct, we can attach the data from the Json to the struct data.
+	// // Using the BindJSON function to the newComment, which is a struct, we can attach the data from the Json to the struct data.
 	if err := decoder; err != nil {
-		return
+		panic(err.Error())
 	}
+	row, err := db.Prepare("INSERT INTO comments(title, comment_text, author, publish_date, anime) VALUES(?,?,?,?,?)")
+	if err != nil {
+		panic(err.Error())
+	}
+	row.Exec(newComment.Title, newComment.Text, newComment.Author, newComment.Date, newComment.Anime)
 
-	// Add the newComment to the comments slice already created
-	comments = append(comments, newComment)
-
-	// Send back a status "created" with the newComment json file
-	var response = JsonResponseComments{Type: "success", Data: comments}
+	// fmt.Printf("test %s", newComment.Text)
+	// // Send back a status "created" with the newComment json file
+	var response = JsonResponseComments{Type: "success", Data: []Comment{}}
 	json.NewEncoder(w).Encode(response)
+
+	defer db.Close()
 }
 
 // Delete comment
@@ -177,37 +173,29 @@ func updateComment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	commentFound, index := loopStructUpdate(id)
-	if commentFound {
-		if newComment.Title != "" {
-			comments[index].Title = newComment.Title
+	db := dbConn()
+	if newComment.Title != "" {
+		insForm, err := db.Prepare("UPDATE comments SET title=? WHERE id=?")
+		if err != nil {
+			panic(err.Error())
 		}
-		if newComment.Text != "" {
-			comments[index].Text = newComment.Text
+		insForm.Exec(newComment.Title, id)
+	}
+	if newComment.Text != "" {
+		insForm, err := db.Prepare("UPDATE comments SET comment_text=? WHERE id=?")
+		if err != nil {
+			panic(err.Error())
 		}
-
-		var response = JsonResponseComments{Type: "success", Data: comments}
-		json.NewEncoder(w).Encode(response)
-		return
+		insForm.Exec(newComment.Text, id)
 	}
 
-	var response = JsonResponseComments{Type: "not found", Data: comments}
+	var response = JsonResponseComments{Type: "success", Data: []Comment{}}
 	json.NewEncoder(w).Encode(response)
 }
 
 // Utility functions
 func removeElement(slice []Comment, index int) []Comment {
 	return append(slice[:index], slice[index+1:]...)
-}
-
-func loopStructUpdate(id string) (bool, int) {
-	for index, comment := range comments {
-		if strconv.FormatInt(comment.ID, 10) == id {
-			return true, index
-		}
-	}
-
-	return false, 0
 }
 
 func dbConn() (db *sql.DB) {
