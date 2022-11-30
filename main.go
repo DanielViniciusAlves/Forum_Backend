@@ -128,7 +128,7 @@ func postComment(w http.ResponseWriter, r *http.Request) {
 
 	db := dbConn()
 	decoder := json.NewDecoder(r.Body).Decode(&newComment)
-	// // Using the BindJSON function to the newComment, which is a struct, we can attach the data from the Json to the struct data.
+	// Using the BindJSON function to the newComment, which is a struct, we can attach the data from the Json to the struct data.
 	if err := decoder; err != nil {
 		panic(err.Error())
 	}
@@ -138,8 +138,7 @@ func postComment(w http.ResponseWriter, r *http.Request) {
 	}
 	row.Exec(newComment.Title, newComment.Text, newComment.Author, newComment.Date, newComment.Anime)
 
-	// fmt.Printf("test %s", newComment.Text)
-	// // Send back a status "created" with the newComment json file
+	// Send back a status "created" with the newComment json file
 	var response = JsonResponseComments{Type: "success", Data: []Comment{}}
 	json.NewEncoder(w).Encode(response)
 
