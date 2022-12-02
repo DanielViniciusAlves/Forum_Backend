@@ -10,19 +10,19 @@ import (
 )
 
 type JsonResponse struct {
-	Type    string    `json:"type"`
-	Data    []Comment `json:"data"`
-	Message string    `json:"message"`
+	Message string `json:"message"`
 }
 
 // Retrieve all the comments
 func getComments(w http.ResponseWriter, r *http.Request) {
+	enableCors(&w)
 	var comments = Comment{}
 	var comments_slice = []Comment{}
 
 	db := dbConn()
 
 	row, err := db.Query("SELECT * FROM comments")
+	defer db.Close()
 	if err != nil {
 		println("Table not found.")
 	}
@@ -36,14 +36,13 @@ func getComments(w http.ResponseWriter, r *http.Request) {
 		comments_slice = append(comments_slice, comments)
 	}
 
-	var response = JsonResponse{Type: "success", Data: comments_slice}
-	json.NewEncoder(w).Encode(response)
-
-	defer db.Close()
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(comments_slice)
 }
 
 // Retrieve single comment by ID
 func getCommentByID(w http.ResponseWriter, r *http.Request) {
+	enableCors(&w)
 	var comments = Comment{}
 
 	// Get the ID passed as a param in the url parsing the URL
@@ -55,6 +54,7 @@ func getCommentByID(w http.ResponseWriter, r *http.Request) {
 
 	db := dbConn()
 	row := db.QueryRow("SELECT * FROM comments WHERE id = ?", id)
+	defer db.Close()
 	if err := row.Scan(&comments.Id, &comments.Title, &comments.Text, &comments.Author, &comments.Date, &comments.Anime); err != nil {
 		if err == sql.ErrNoRows {
 			println("Row no found.")
@@ -64,14 +64,13 @@ func getCommentByID(w http.ResponseWriter, r *http.Request) {
 		log.Fatal(err)
 	}
 
-	var response = JsonResponse{Type: "success", Data: []Comment{comments}}
-	json.NewEncoder(w).Encode(response)
-
-	defer db.Close()
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(comments)
 }
 
 // Post new comment
 func postComment(w http.ResponseWriter, r *http.Request) {
+	enableCors(&w)
 	var newComment Comment
 
 	db := dbConn()
@@ -82,6 +81,7 @@ func postComment(w http.ResponseWriter, r *http.Request) {
 	}
 
 	row, err := db.Prepare("INSERT INTO comments(title, comment_text, author, publish_date, anime) VALUES(?,?,?,?,?)")
+	defer db.Close()
 	if err != nil {
 		println("Error preparing the mysql command.")
 		log.Fatal(err)
@@ -102,14 +102,13 @@ func postComment(w http.ResponseWriter, r *http.Request) {
 	newComment.Id = lastId
 
 	// Send back a status "created" with the newComment json file
-	var response = JsonResponse{Type: "success", Data: []Comment{newComment}}
-	json.NewEncoder(w).Encode(response)
-
-	defer db.Close()
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(newComment)
 }
 
 // Delete comment
 func deleteComment(w http.ResponseWriter, r *http.Request) {
+	enableCors(&w)
 	id := strings.TrimPrefix(r.URL.Path, "/comment/delete/")
 
 	db := dbConn()
@@ -119,15 +118,16 @@ func deleteComment(w http.ResponseWriter, r *http.Request) {
 		log.Fatal(err)
 	}
 	delete.Exec(id)
-
-	var response = JsonResponse{Type: "success"}
-	json.NewEncoder(w).Encode(response)
-
 	defer db.Close()
+
+	w.WriteHeader(http.StatusOK)
+	var response = JsonResponse{Message: "deleted successful"}
+	json.NewEncoder(w).Encode(response)
 }
 
 // Update comment
 func updateComment(w http.ResponseWriter, r *http.Request) {
+	enableCors(&w)
 	id := strings.TrimPrefix(r.URL.Path, "/comment/update/")
 	var editedComment Comment
 
@@ -154,7 +154,8 @@ func updateComment(w http.ResponseWriter, r *http.Request) {
 		edit.Exec(editedComment.Text, id)
 	}
 
-	var response = JsonResponse{Type: "success"}
+	w.WriteHeader(http.StatusOK)
+	var response = JsonResponse{Message: "edited successfully"}
 	json.NewEncoder(w).Encode(response)
 
 	defer db.Close()
