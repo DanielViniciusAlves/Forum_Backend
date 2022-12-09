@@ -1,4 +1,5 @@
 # Defining API Endpoints
+# This file need to be updated!
 * This document will have the purpose of defining the projects endpoints for the API.
 
 First we will define the idea of the project. Basically it will be for starter a forum. The user will have the possibility of make a comment, edit this comment, delete and obviously see the comment. So it will be a CRUD.
