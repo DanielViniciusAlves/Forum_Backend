@@ -8,3 +8,11 @@ type Comment struct {
 	Date   string `json:"date"`
 	Anime  string `json:"anime"`
 }
+
+type CommentTest struct {
+	Title  string `json:"title"`
+	Text   string `json:"text"`
+	Author string `json:"author"`
+	Date   string `json:"date"`
+	Anime  string `json:"anime"`
+}
