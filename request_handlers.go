@@ -33,7 +33,9 @@ func getComments(w http.ResponseWriter, r *http.Request) {
 			log.Fatal(err)
 		}
 
-		comments_slice = append(comments_slice, comments)
+		// comments_slice... this indicate that the append will get every element inside comments_slice
+		// so it will not treat as a single thing.
+		comments_slice = append([]Comment{comments}, comments_slice...)
 	}
 
 	w.WriteHeader(http.StatusOK)
@@ -71,7 +73,7 @@ func getCommentByID(w http.ResponseWriter, r *http.Request) {
 // Post new comment
 func postComment(w http.ResponseWriter, r *http.Request) {
 	enableCors(&w)
-	var newComment Comment
+	var newComment CommentTest
 
 	db := dbConn()
 	decoder := json.NewDecoder(r.Body).Decode(&newComment)
@@ -91,15 +93,16 @@ func postComment(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		println("Error executing the mysql insertion.")
 		log.Fatal(err)
+		log.Fatal(res)
 	}
 
-	lastId, err := res.LastInsertId()
-	if err != nil {
-		println("Error finding the id of the last insertion to the database.")
-		log.Fatal(err)
-	}
+	// lastId, err := res.LastInsertId()
+	// if err != nil {
+	// 	println("Error finding the id of the last insertion to the database.")
+	// 	log.Fatal(err)
+	// }
 
-	newComment.Id = lastId
+	// newComment.Id = lastId
 
 	// Send back a status "created" with the newComment json file
 	w.WriteHeader(http.StatusOK)
