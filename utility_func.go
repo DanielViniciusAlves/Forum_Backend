@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/go-sql-driver/mysql"
 )
@@ -19,7 +20,7 @@ func enableCors(w *http.ResponseWriter) {
 func dbConn() (db *sql.DB) {
 	cfg := mysql.Config{
 		User:                 "root",
-		Passwd:               "kiwizao123",
+		Passwd:               os.Getenv("DBPASS"),
 		Net:                  "tcp",
 		Addr:                 "127.0.0.1:3306",
 		DBName:               "comments",
