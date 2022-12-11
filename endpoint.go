@@ -16,4 +16,10 @@ func endpointHandlers() {
 
 	// Handling update request for specific comment
 	http.HandleFunc("/comment/update/", updateComment)
+
+	// Handling post request for creating new user
+	http.HandleFunc("/new_user", createUser)
+
+	// Handling post request for getting user token
+	http.HandleFunc("/login", getTokenUserPassword)
 }
