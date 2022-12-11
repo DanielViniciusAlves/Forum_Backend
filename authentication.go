@@ -35,7 +35,7 @@ func getTokenUserPassword(w http.ResponseWriter, r *http.Request) {
 	//here I have a user!
 	//Now check if exists
 	db := dbConn()
-	row := db.QueryRow("SELECT * FROM user WHERE username = ?", login.Username)
+	row := db.QueryRow("SELECT * FROM users WHERE username = ?", login.Username)
 	defer db.Close()
 	if err := row.Scan(&user.Username, &user.Password); err != nil {
 		if err == sql.ErrNoRows {
@@ -69,7 +69,7 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	db := dbConn()
-	row := db.QueryRow("SELECT * FROM user WHERE username = ?", login.Username)
+	row := db.QueryRow("SELECT * FROM users WHERE username = ?", login.Username)
 	defer db.Close()
 	if err := row.Scan(&exist); err != nil && err != sql.ErrNoRows {
 		println("Error in the query.")
