@@ -16,3 +16,8 @@ type CommentTest struct {
 	Date   string `json:"date"`
 	Anime  string `json:"anime"`
 }
+
+type Login struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
