@@ -16,10 +16,16 @@ func migrate() {
 func createDataBase(db *sql.DB) {
 	db.Exec("use comments")
 	db.Exec("DROP TABLE IF EXISTS comments")
-	_, err := db.Exec("CREATE TABLE comments (id INT AUTO_INCREMENT NOT NULL, title VARCHAR(128) NOT NULL, comment_text VARCHAR(255) NOT NULL, author VARCHAR(255) NOT NULL, publish_date VARCHAR(255) NOT NULL, anime VARCHAR(255) NOT NULL, PRIMARY KEY (`id`) )")
-	if err != nil {
+	_, err_comments := db.Exec("CREATE TABLE comments (id INT AUTO_INCREMENT NOT NULL, title VARCHAR(128) NOT NULL, comment_text VARCHAR(255) NOT NULL, author VARCHAR(255) NOT NULL, publish_date VARCHAR(255) NOT NULL, anime VARCHAR(255) NOT NULL, PRIMARY KEY (`id`) )")
+	if err_comments != nil {
 		println("Error while creating comments table.")
-		log.Fatal(err)
+		log.Fatal(err_comments)
+	}
+	db.Exec("DROP TABLE IF EXISTS users")
+	_, err_users := db.Exec("CREATE TABLE users (username VARCHAR(128) NOT NULL, password VARCHAR(255) NOT NULL, PRIMARY KEY (`username`) )")
+	if err_users != nil {
+		println("Error while creating comments table.")
+		log.Fatal(err_users)
 	}
 }
 
