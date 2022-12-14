@@ -119,3 +119,8 @@ func createToken(username string) (string, error) {
 	}
 	return token, nil
 }
+
+func refreshToken() {
+	"https://www.sohamkamani.com/golang/jwt-authentication/"
+	"https://docs.oracle.com/en/cloud/saas/live-experience/faled/handling-access-token-expiration.html"
+}
