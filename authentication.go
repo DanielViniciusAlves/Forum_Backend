@@ -121,6 +121,22 @@ func createToken(username string) (string, error) {
 }
 
 func refreshToken() {
-	"https://www.sohamkamani.com/golang/jwt-authentication/"
-	"https://docs.oracle.com/en/cloud/saas/live-experience/faled/handling-access-token-expiration.html"
+	// 	Passive expiration
+
+	// My favorite pattern is to have a dedicated server error.
+
+	// Your server should respond with a particular error when the token is expired (to be distinguished from the 401 Unauthorized due to role access). You then add an HTTP middleware to your client that:
+
+	//     detects this error response
+	//     deletes local token and navigates to /auth/login
+
+	// Or if you have a renew token:
+
+	//     detects this error response
+	//     attempts to renew the JWT
+	//     repeats the original request on success OR navigates to auth page on failure.
+
+	// This is a passive system that allows you to treat the JWT as an obscure string and does not have time-related issues.
+	// 	"https://www.sohamkamani.com/golang/jwt-authentication/"
+	// 	"https://docs.oracle.com/en/cloud/saas/live-experience/faled/handling-access-token-expiration.html"
 }
