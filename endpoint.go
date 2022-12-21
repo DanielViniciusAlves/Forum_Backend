@@ -1,11 +1,13 @@
 package main
 
 // This file have the purpose of defining the endpoints.
-import "net/http"
+import (
+	"net/http"
+)
 
 func endpointHandlers() {
 	// Handling	get requests
-	http.HandleFunc("/comments", getComments)
+	http.Handle("/", checkRequestToken(http.HandlerFunc(getComments)))
 	http.HandleFunc("/comment/", getCommentByID)
 
 	// Handling the post request for creating a new comment
