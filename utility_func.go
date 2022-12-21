@@ -18,6 +18,7 @@ func enableCors(w *http.ResponseWriter) {
 }
 
 func dbConn() (db *sql.DB) {
+
 	cfg := mysql.Config{
 		User:                 "root",
 		Passwd:               os.Getenv("DBPASS"),
