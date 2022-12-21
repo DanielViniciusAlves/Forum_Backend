@@ -21,3 +21,8 @@ type Login struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
 }
+
+type Auth struct {
+	// Refresh string `json:"refresh"`
+	Token string `json:"token"`
+}
