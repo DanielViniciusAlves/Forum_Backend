@@ -23,7 +23,7 @@ func getSecret() string {
 // var users map[string][]byte = make(map[string][]byte)
 // var idxUsers int = 0
 
-//getTokenUserPassword returns a jwt token for a user if the //password is ok
+//getTokenUserPassword returns a jwt token for a user if the password is ok
 func getTokenUserPassword(w http.ResponseWriter, r *http.Request) {
 	var login Login
 	var user Login
@@ -39,7 +39,7 @@ func getTokenUserPassword(w http.ResponseWriter, r *http.Request) {
 	defer db.Close()
 	if err := row.Scan(&user.Username, &user.Password); err != nil {
 		if err == sql.ErrNoRows {
-			println("Row no found.")
+			println("Row not found.")
 			log.Fatal(err)
 		}
 		println("Couldn't find searched params.")
@@ -48,13 +48,29 @@ func getTokenUserPassword(w http.ResponseWriter, r *http.Request) {
 
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(login.Password))
 	if err != nil {
-		return
+		log.Fatal(err)
 	}
 	token, err := createToken(login.Username)
 	if err != nil {
 		http.Error(w, "Cannot create token", http.StatusInternalServerError)
 		return
 	}
+	// refresh, err := createRefreshToken(login.Username)
+	// if err != nil {
+	// 	http.Error(w, "Cannot create token", http.StatusInternalServerError)
+	// 	return
+	// }
+
+	// var response Auth
+	// response.Refresh = refresh
+	// response.Token = token
+	// print(response.Token)
+	expirationTime := time.Now().Add(5 * time.Minute)
+	http.SetCookie(w, &http.Cookie{
+		Name:    "token",
+		Value:   token,
+		Expires: expirationTime,
+	})
 
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(token)
@@ -99,12 +115,36 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Cannot create token", http.StatusInternalServerError)
 		return
 	}
+	// refresh, err := createRefreshToken(login.Username)
+	// if err != nil {
+	// 	http.Error(w, "Cannot create token", http.StatusInternalServerError)
+	// 	return
+	// }
 
+	// var response Auth
+	// response.Refresh = refresh
+	// response.Token = token
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(token)
 }
 
 func createToken(username string) (string, error) {
+	var err error
+	//Creating Access Token
+	atClaims := jwt.MapClaims{}
+	atClaims["authorized"] = true
+	atClaims["username"] = username
+	atClaims["exp"] = time.Now().Add(time.Minute * 15).Unix()
+	at := jwt.NewWithClaims(jwt.SigningMethodHS256, atClaims)
+	secret := getSecret()
+	token, err := at.SignedString([]byte(secret))
+	if err != nil {
+		return "", err
+	}
+	return token, nil
+}
+
+func createRefreshToken(username string) (string, error) {
 	var err error
 	//Creating Access Token
 	atClaims := jwt.MapClaims{}
