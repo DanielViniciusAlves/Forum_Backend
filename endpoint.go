@@ -23,5 +23,5 @@ func endpointHandlers() {
 	http.HandleFunc("/new_user", createUser)
 
 	// Handling post request for getting user token
-	http.HandleFunc("/login", getTokenUserPassword)
+	http.HandleFunc("/login", loginUser)
 }
