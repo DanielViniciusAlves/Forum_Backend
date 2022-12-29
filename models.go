@@ -23,6 +23,6 @@ type Login struct {
 }
 
 type Auth struct {
-	// Refresh string `json:"refresh"`
-	Token string `json:"token"`
+	Refresh_Token string `json:"refresh_token"`
+	Access_Token  string `json:"access_token"`
 }

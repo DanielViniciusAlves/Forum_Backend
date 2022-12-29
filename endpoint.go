@@ -24,4 +24,7 @@ func endpointHandlers() {
 
 	// Handling post request for getting user token
 	http.HandleFunc("/login", loginUser)
+
+	// Handling auth request for accessing blocked page
+	http.HandleFunc("/auth", auth)
 }
