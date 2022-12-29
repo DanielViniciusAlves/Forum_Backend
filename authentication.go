@@ -51,21 +51,18 @@ func loginUser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Cannot create token", http.StatusInternalServerError)
 		return
 	}
-	// refreshToken, err := createToken(login.Username, 60)
-	// if err != nil {
-	// 	http.Error(w, "Cannot create refresh token", http.StatusInternalServerError)
-	// 	return
-	// }
+	refreshToken, err := createToken(login.Username, 60)
+	if err != nil {
+		http.Error(w, "Cannot create refresh token", http.StatusInternalServerError)
+		return
+	}
 
-	// http.SetCookie(w, &http.Cookie{
-	// 	Name:  "refresh_token",
-	// 	Value: refreshToken,
-	// })
-
-	w.Header().Set("Set-Cookie", "first-cookie=value1")
+	var response Auth
+	response.Refresh_Token = refreshToken
+	response.Access_Token = accessToken
 
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(accessToken)
+	json.NewEncoder(w).Encode(response)
 }
 
 func createUser(w http.ResponseWriter, r *http.Request) {
@@ -115,13 +112,12 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.SetCookie(w, &http.Cookie{
-		Name:  "refresh_token",
-		Value: refreshToken,
-	})
+	var response Auth
+	response.Refresh_Token = refreshToken
+	response.Access_Token = accessToken
 
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(accessToken)
+	json.NewEncoder(w).Encode(response)
 }
 
 func createToken(username string, expirationTime time.Duration) (string, error) {
@@ -137,4 +133,9 @@ func createToken(username string, expirationTime time.Duration) (string, error) 
 	}
 
 	return tokenString, nil
+}
+
+func auth(w http.ResponseWriter, r *http.Request) {
+	print("test")
+	http.Error(w, "Cannot create token", http.StatusInternalServerError)
 }
